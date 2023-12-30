@@ -94,6 +94,23 @@ php translate.php
 php translate.php
 ```
 
+## Backup
+
+Before translating your HTML files, are recommended to create backups of your existing HTML files. You can use the following Shell Script:
+
+```
+for file in *.html; do cp "$file" ${file%.html}_ja.html"; done
+```
+
+You can restore the original files (if needed) through the following command:
+
+```
+find . -type f -name '*_ja.htm' -print0 |
+    while IFS= read -d '' file; do
+        mv "$file" "${file%_ja.htm}.htm"
+    done
+```
+
 ## Ruffle integration (optional)
 
 Most of my HTML games were Adobe Flash based, so I embeded an optional [Ruffle](https://ruffle.rs) integration. Ruffle allows you to play Flash based games into newer browsers without using Adobe Flash.
@@ -105,6 +122,12 @@ If you want to use this feature, you need to:
 1. Download the Self-Hosted version of Ruffle. Available at: https://ruffle.rs/#downloads
 
 2. Extract the downloaded file (e.g. `ruffle_nightly_2020_11_25_selfhosted.zip`) to the "ruffle" subdirectory at the root directory of the file tree hierarchy. Please see the "File Tree Example" section for an example.
+
+If you didn't provide Ruffle during script execution, you can apply it on HTML files through the following Shell Script:
+
+```
+for file in *.html; do sed -i "s#</head>#<SCRIPT>\n    window.RufflePlayer = {\n      config: {\n        autoplay: \"on\",\n      }\n    };\n</SCRIPT>\n<SCRIPT src=\"./flash/ruffle/ruffle.js\"></SCRIPT>\n<META charset=\"utf8\">\n</head>#" $file; done
+```
 
 ### CORS Server
 
