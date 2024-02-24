@@ -96,18 +96,15 @@ php translate.php
 
 ## Backup
 
-Before translating your HTML files, are recommended to create backups of your existing HTML files. You can use the following Shell Script:
-
-```
-for file in *.html; do cp "$file" ${file%.html}_ja.html"; done
-```
+Before translating your HTML files, the script creates an automatic backup of your existing HTML files.
 
 You can restore the original files (if needed) through the following command:
 
 ```
-find . -type f -name '*_ja.htm' -print0 |
+find . -type f -name '*_orig.htm*' -print0 |
     while IFS= read -d '' file; do
-        mv "$file" "${file%_ja.htm}.htm"
+        extension="${file##*.}"
+        mv "$file" "${file%_orig.$extension}.$extension"
     done
 ```
 
