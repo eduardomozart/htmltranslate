@@ -144,7 +144,13 @@ You can run the CORS Server by copying the file to the main folder (please see t
 
 ```
 cd HTML_games/
-python cors_server.py 8080
+python cors_server.py 8000
+```
+
+You can also run on another OSes:
+
+```
+python3 -m http.server
 ```
 
 It would serve the contents of the "HTML_games/" folder through a local web server ("http://localhost:8080"), allowing Rufus to load local SWF files.
