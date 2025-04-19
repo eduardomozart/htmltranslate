@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
 import http.server as httpserver
+import os
+tray = None
 
 class CORSHTTPRequestHandler(httpserver.SimpleHTTPRequestHandler):
     def send_head(self):
@@ -45,7 +47,9 @@ class CORSHTTPRequestHandler(httpserver.SimpleHTTPRequestHandler):
         self.end_headers()
         return f
 
-def start_server():
+def start_server(PORT):
+    import socketserver
+
     handler = CORSHTTPRequestHandler
 
     httpd = socketserver.TCPServer(("", PORT), handler, bind_and_activate=False)
@@ -57,45 +61,32 @@ def start_server():
         httpd.serve_forever()
     except KeyboardInterrupt:
         httpd.shutdown()
-        gtk.main_quit();
         #httpd.socket_close()
-        exit();
+        exit()
 
 def trayicon():
-    indicator = appindicator.Indicator.new("customtray", "semi-starred-symbolic", appindicator.IndicatorCategory.APPLICATION_STATUS)
-    indicator.set_status(appindicator.IndicatorStatus.ACTIVE)
-    indicator.set_menu(menu())
-    gtk.main()
-
-def menu():
-    menu = gtk.Menu()
-
-    opentray = gtk.MenuItem('Open HTTP CORS Server')
-    opentray.connect('activate', opent)
-    menu.append(opentray)
-
-    exittray = gtk.MenuItem('Exit HTTP CORS Server')
-    exittray.connect('activate', quit)
-    menu.append(exittray)
-  
-    menu.show_all()
-    return menu
+    global tray
+    image = PIL.Image.open("python.png")
+    tray = pystray.Icon("HTTP CORS Server", image, menu=pystray.Menu(
+        pystray.MenuItem("Open HTTP CORS Server", opent),
+        pystray.MenuItem("Quit HTTP CORS Server", quit)
+    ))
+    tray.run()
 
 def opent(_):
     print(f"serving at port {PORT}")
     webbrowser.open("http://localhost:" + str(PORT))
 
 def quit(_):
-    gtk.main_quit();
-    #httpd.shutdown();
-    #httpd.socket_close();
+    global tray
+    tray.stop()
+    #httpd.shutdown()
+    #httpd.socket_close()
     # Terminate the process
     proc.terminate()  # sends a SIGTERM
-    sys.exit();
+    sys.exit()
 
 if __name__ == "__main__":
-    import os
-    import socketserver
     import webbrowser
     #import threading
     import multiprocessing
@@ -103,9 +94,10 @@ if __name__ == "__main__":
     import sys
     PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
 
-    from gi.repository import Gtk as gtk, AppIndicator3 as appindicator # Ubuntu apt-get install gir1.2-appindicator3
+    import pystray
+    import PIL.Image
 
-    proc = multiprocessing.Process(target=start_server, args=())
+    proc = multiprocessing.Process(target=start_server, args=(PORT,))
     proc.start()
 
     print(f"serving at port {PORT}")

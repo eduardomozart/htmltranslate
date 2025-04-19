@@ -41,9 +41,9 @@ The ``data.txt`` file from "HTML game 1" folder will contain all strings (text) 
 
 The ``data_trans.txt`` file needs to be created manually by you at the same folder of ``data.txt`` file. Please see the "File Tree Example" section for an example.
 
-The ``data_trans.txt`` file must contain the translated strings from the ``data.txt`` file. You can translate the strings by hand or use a translation service (e.g. Google Translate) to upload your source file to have a MTL (machine translated) version from it.
+The ``data_trans.txt`` file must contain the translated strings from the ``data.txt`` file. You can translate the strings by hand or use a translation service (e.g. Google Translate at https://translatordrive.softgateon.net/) to upload your source file to have a MTL (machine translated) version from it.
 
-The ``data_trans.txt`` file must match exactly the same number of lines of the ``data.txt`` file, and each line of ``data_trans.txt`` MUST correspond the same line number of ``data.txt`` file, or the script will apply the translation out of place (aka. instead of replacing the original string, it will replace another one).
+Note: The translation service may translate the filename on # (comment section) but it doesn't matter. The ``data_trans.txt`` file must match exactly the same number of lines of the ``data.txt`` file, and each line of ``data_trans.txt`` MUST correspond the same line number of ``data.txt`` file, or the script will apply the translation out of place (aka. instead of replacing the original string, it will replace another one).
 
 Most translation services do not allow translating file with a lot of letters. You can split the number of lines from the file (to limit the number of words to translate when using an on-line service) by hand or running the following command at the Terminal (Unix):
 
@@ -66,32 +66,46 @@ This script requires the following dependencies:
 1. php-intl
 2. php-mbstring
 
+You can check if they are available into your system by running the command:
+
+```
+php -m |grep -E 'intl|mbstring'
+intl
+mbstring
+```
+
 You can download and install them at Debian-based distros running the following command at the Terminal:
 
 ```
 sudo apt-get update && sudo apt-get install php-intl php-mbstring
 ```
 
-## HowTo (Debian 10)
+## HowTo
 
 After installing the PHP scripts dependencies, you can finally run it: 
 
-1. Edit the ``translate.php`` file and change the ``$rootdir`` variable to point it to where your HTML files are (into the "File Tree Example" above, the root directory would be the full path to the "HTML_games" directory). It's recommended to specify a full path at this variable.
-
-2. Run the script running the following command at the Terminal (Linux)/Command Prompt (Windows):
+1. Run the script running the following command at the Terminal (Linux)/Command Prompt (Windows):
 
 ```
-php translate.php
+php translate.php /home/Eduardo/HTML_games
 ```
 
-3. It will create a ``data.txt`` file at each subfolder. 
+Change the ``/home/Eduardo/HTML_games`` variable to point it to where your HTML files are (into the "File Tree Example" above, the root directory would be the full path to the "HTML_games" directory). It's recommended to specify a full path for this argument.
 
-4. Create the ``data_trans.txt`` file containing the translated strings of the ``data.txt`` file. Please read the "About the data_trans.txt file" section for more info.
+2. It will create a ``data.txt`` file at each subfolder.
 
-5. Run the script again to apply the translation to your HTML files. **PLEASE DO A BACKUP OF YOUR HTML FILES FIRST!**
+Tip: You can start from scratch by deleting all ``data.txt`` files recursively through the command:
 
 ```
-php translate.php
+find . -name "data.txt" -exec rm -f {} \;
+````
+
+3. Create the ``data_trans.txt`` file containing the translated strings of the ``data.txt`` file. Please read the "About the data_trans.txt file" section for more info.
+
+4. Run the script again to apply the translation to your HTML files. **PLEASE DO A BACKUP OF YOUR HTML FILES FIRST!**
+
+```
+php translate.php /home/Eduardo/HTML_games
 ```
 
 ## Backup
@@ -116,7 +130,7 @@ The script automatically detects if there's any "embed" tag at your HTML files a
 
 If you want to use this feature, you need to:
 
-1. Download the Self-Hosted version of Ruffle. Available at: https://ruffle.rs/#downloads
+1. Download the Self-Hosted version of Ruffle. Available at: https://ruffle.rs/downloads
 
 2. Extract the downloaded file (e.g. `ruffle_nightly_2020_11_25_selfhosted.zip`) to the "ruffle" subdirectory at the root directory of the file tree hierarchy. Please see the "File Tree Example" section for an example.
 
@@ -134,20 +148,20 @@ The ``cors_server.py`` script is a modified version from CORS Servers Python scr
 
 This modification includes a taskbar tray icon that allows you to close or browse your running CORS Servers using your default browser.
 
-For it to work, you must install the following dependency at Debian-based distros:
+For it to work, you must install the following dependency:
 
 ```
-apt-get install gir1.2-appindicator3
+python3 -m pip install pystray
 ```
 
-You can run the CORS Server by copying the file to the main folder (please see the "File Tree Example" for more information) and running the following commands through Terminal (Linux):
+You can run the CORS Server by copying the file to the main folder (please see the "File Tree Example" for more information) and running the following commands through Terminal:
 
 ```
 cd HTML_games/
-python cors_server.py 8000
+python3 cors_server.py 8000
 ```
 
-You can also run on another OSes:
+Alternatively, you can run the HTTP server without tray icon instead:
 
 ```
 python3 -m http.server

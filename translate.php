@@ -1,10 +1,16 @@
 <?php
+$debug = true;
+
 // TranslateHTML ver. 0.0.1
 // Requires ''php-intl'' and ''php-mbstring'' packages.
 // Install them through ''sudo apt-get update && sudo apt-get install php-intl php-mbstring'' (Debian-based distros).
 // The latest Ruffle binary release compatible with Debian 10 "Buster" is Ruffle 2020-12-11.
 
-$rootdir = '.';
+if (isset($argv[1])) {
+  $rootdir = $argv[1];
+} else {
+  $rootdir = '.';
+}
 
 // You can change the dot (.) below to any other path where this script will look files to translate.
 // E.g: /home/Eduardo/HTML
@@ -51,12 +57,20 @@ foreach($dirlist as $dir) {
     } elseif (file_exists(os_path_join($currdir, 'data_trans.txt'))) {
         $tfp = explode("\n", file_get_contents(os_path_join($currdir, 'data_trans.txt')));
         // Remove lines that starts with hashtag (comments)
-        $tfp = preg_replace(
+        foreach($tfp as $key => $value)
+        {
+            if(preg_match("/^\#(.*)$/m",$value))
+            {
+                  unset($tfp[$key]);
+            }
+        }
+        /* $tfp = preg_replace(
             "/^\#(.*)$/m",
             "",
             $tfp);
         // Remove empty array entries and reindex the array
-        $tfp = array_values(array_filter($tfp));
+        $tfp = array_values(array_filter($tfp)); */
+        $tfp = array_values($tfp);
         // var_dump($tfp);
         // exit();
         $counter = 0;
@@ -66,13 +80,12 @@ foreach($dirlist as $dir) {
         echo $file . "\r\n";
         $pathinfo = pathinfo($file);
         $source_file = os_path_join($pathinfo['dirname'], $pathinfo['filename'] . '_orig.' . $pathinfo['extension']);
-        if (strpos($pathinfo['dirname'], 'flash') !== false && !file_exists(os_path_join($currdir, 'data_trans.txt'))) { echo "Directory contains 'flash'. Skipping.\r\n"; continue; }
-        if (substr($pathinfo['filename'], -3) == '_orig') { echo "Original file from already translated content. Skipping.\r\n"; continue; }
-        if (file_exists($source_file)) { echo "File " . $source_file . " already exists. Skipping.\r\n"; continue; }
+        if (strpos($pathinfo['dirname'], 'flash') !== false) { echo "Directory contains 'flash'. Skipping.\r\n"; continue; }
+        if (substr($pathinfo['filename'], -5) == '_orig') { echo "Original file from already translated content. Skipping.\r\n"; continue; }
+        if (file_exists($source_file)) { echo "File '" . $source_file . "' already exists. Skipping.\r\n"; continue; }
 
         if (!file_exists(os_path_join($currdir, 'data_trans.txt'))) {
-            echo "\r\nExtracting text to translate from " . os_path_join($currdir, $file) . "\r\n";
-            fwrite($fp, "# " . $file . "\r\n");
+            echo "\r\nExtracting text to translate from " . $file . "\r\n";
         }
 
         //
@@ -90,14 +103,32 @@ foreach($dirlist as $dir) {
         // echo $html;
 
         // libxml_use_internal_errors(true);
-        $dom = new DomDocument();
-        $dom->loadHTML($html);
+        $dom = new DomDocument('1.0', 'UTF-8');
+        $dom->loadHTML(mb_encode_numericentity($html, [0x80, 0x10FFFF, 0, ~0], 'UTF-8'));
         $xpath = new DOMXPath($dom);
 
-        foreach ($xpath->query('//text()[
-            not(ancestor::script) and
-            not(normalize-space(.) = "")
-        ]') as $text) {
+        $queryText = '//text()[
+          not(ancestor::title) and
+          not(ancestor::script) and
+          not(normalize-space(.) = "")
+        ]';
+        if ($xpath->query($queryText)->length > 0) {
+          if (@is_resource($fp)) {
+            echo "Found " . $xpath->query($queryText)->length . " strings to extract.";
+            fwrite($fp, "# " . $file . "\r\n");
+          } else {
+            echo "Found " . $xpath->query($queryText)->length . " strings to translate.";
+            echo "\r\nTranslating " . $file . "\r\n";
+          }
+        } else {
+          if (@is_resource($fp)) {
+            // data.txt is open, so we are generating the source translation file.
+            echo "File '" . $source_file . "' doesn't contains any text. Skipping.\r\n";
+          }
+          continue;
+        }
+
+        foreach ($xpath->query($queryText) as $text) {
             // Directory contains 'flash'. Skipping.
             if(strpos($pathinfo['dirname'], 'flash') !== false) { continue; }
 
@@ -109,7 +140,7 @@ foreach($dirlist as $dir) {
             } */
 
             // Remove Tabs characters
-            $text->nodeValue = trim(str_replace('　', '', mb_convert_encoding($text->nodeValue, 'ISO-8859-1', 'UTF-8')));
+            $text->nodeValue = trim(str_replace('　', '', $text->nodeValue));
             // data.txt is open, so we are generating the source translation file.
             if (@is_resource($fp)) {
                 //echo $text->nodeValue;
@@ -122,7 +153,6 @@ foreach($dirlist as $dir) {
                 }
             } elseif (file_exists(os_path_join($currdir, 'data_trans.txt'))) {
                 // Translate
-                echo "\r\nTranslating " . $file . "\r\n";
 
                 if (array_key_exists($counter, $tfp)) {
                     if(trim($text->nodeValue)) {
@@ -133,7 +163,7 @@ foreach($dirlist as $dir) {
                 }
                 else {
                     // Exit Script if Translation is incomplete.
-                    echo "Exiting script because Translation is incomplete (e.g. using 'translateText()' function and exceeded Google Translator limitations).";
+                    echo "Exiting script because Translation is incomplete (e.g. unmatched lines into 'data_trans.txt' relative to 'data.txt' or using 'translateText()' function and exceeded Google Translator limitations).";
                     exit();
                 }
             }
@@ -148,11 +178,11 @@ foreach($dirlist as $dir) {
             $domElement = $dom->createElement('meta');
             $domAttribute = $dom->createAttribute('charset');
             // Value for the created attribute
-            if ($htmlenconding == "SJIS-win") {
-              $domAttribute->value = 'shift-JIS';
-            } else {
+            // if ($htmlenconding == "SJIS-win") {
+            //  $domAttribute->value = 'shift-JIS';
+            // } else {
               $domAttribute->value = 'utf8';
-            }
+            // }
             $domElement->appendChild($domAttribute);
             $head->appendChild($domElement);
 
@@ -162,13 +192,18 @@ foreach($dirlist as $dir) {
             // echo 'file_exists("' . $dirsrc . '"): ' . boolval(file_exists($dirsrc)) . "\r\n";
             if (file_exists($dirsrc)) {
               foreach ($xpath->query('//embed') as $embed) {
-                $embedReplace = str_replace(strtolower($pathinfo['filename']), $pathinfo['filename'], mb_convert_encoding($embed->getAttribute('src'), 'ISO-8859-1', 'UTF-8'));
-                // $embedReplace = mb_convert_encoding(mb_convert_encoding($embedReplace, 'ISO-8859-1', 'UTF-8'), "SJIS-win", "ISO-8859-1");
+                /* if (mb_detect_encoding($html, "SJIS-win, UTF-8") == "SJIS-win") {
+                  $embedReplace = str_replace(strtolower($pathinfo['filename']), $pathinfo['filename'], mb_convert_encoding($embed->getAttribute('src'), 'ISO-8859-1', 'UTF-8'));
+                  // $embedReplace = mb_convert_encoding(mb_convert_encoding($embedReplace, 'ISO-8859-1', 'UTF-8'), "SJIS-win", "ISO-8859-1");
 
-                //echo "Original Embed: " . mb_convert_encoding($embed->getAttribute('src'), 'ISO-8859-1', 'UTF-8');
-                //echo "Fixed Embed: " . $embedReplace . "\r\n";
-                //continue;
-                $embed->setAttribute('src',$embedReplace);
+                  if ($debug) {
+                    echo "Original Embed: " . mb_convert_encoding($embed->getAttribute('src'), 'ISO-8859-1', 'UTF-8');
+                    echo "Fixed Embed: " . $embedReplace . "\r\n";
+                  }
+                  //continue;
+                  
+                  $embed->setAttribute('src',$embedReplace);
+                } */
 
                 // Will Copy Ruffle Files
                 
@@ -226,8 +261,8 @@ function translateText($source, $target, $dtext) {
     $cmd = sprintf('wget -U "Mozilla/5.0" -qO - "http://translate.googleapis.com/translate_a/single?client=gtx&sl=%s&tl=%s&dt=t&q=$(echo "%s" | sed "s/[\"\'<>]//g")" | sed "s/,,,0]],,.*//g" | awk -F\'"\' \'{print $2, $6}\' | awk \'{$NF="";sub(/[ \t]+$/,"")}1\'', $source, $target, $dtext);
     // echo $cmd;
     echo "Query: " . $dtext . "(" . $source . ")\r\n";
-    echo "Translation: " . $output . " (" . $target . ").\r\n";
     $output = shell_exec($cmd);
+    echo "Translation: " . $output . " (" . $target . ").\r\n";
     return $output;
 }
 
