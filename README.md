@@ -16,6 +16,7 @@ The ``translate-json.php`` is an experimental PHP script to extract and translat
 ```
 HTML_games/
 ├─ cors_server.py
+├─ python.png
 ├─ ruffle/
 │  ├─ ruffle.js
 │  ├─ ...
